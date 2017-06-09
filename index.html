@@ -32,7 +32,233 @@
         </section>
         <section data-markdown>
           <textarea data-template>
-            markdown here
+            ## Deploying containerized (1/2)
+
+            * Base: [environments/docker.yaml](https://github.com/openstack/tripleo-heat-templates/blob/50939eb7778e5f70fc9e8c0a3797265836531ade/environments/docker.yaml)
+
+              * Switching to containerized per-service (not per role/node)
+
+            * HA: [environments/docker-ha.yaml](https://review.openstack.org/#/c/471384/1/environments/docker-ha.yaml)
+
+              * Comes after docker.yaml
+
+            * TLS everywhere: [environments/docker-services-tls-everywhere.yaml](https://github.com/openstack/tripleo-heat-templates/blob/50939eb7778e5f70fc9e8c0a3797265836531ade/environments/docker-services-tls-everywhere.yaml)
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+            ## Deploying containerized (2/2)
+
+            * We have [containerized undercloud docs](http://tripleo.org/containers_deployment/undercloud.html)
+
+            * We have [containerized overcloud docs](http://tripleo.org/containers_deployment/overcloud.html)
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+            ## Service template
+
+            * Example: [nova-api.yaml](https://github.com/openstack/tripleo-heat-templates/blob/61fdeb67a021d8f3a74186200674b6725c0b8870/docker/services/nova-api.yaml)
+
+            * Common volumes: [containers-common.yaml](https://github.com/openstack/tripleo-heat-templates/blob/61fdeb67a021d8f3a74186200674b6725c0b8870/docker/services/containers-common.yaml)
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+            ## Deployment workflow (1/2)
+
+            1. [`HostPrepDeployment`](https://github.com/openstack/tripleo-heat-templates/blob/24c0e0d728162ef6be0593f2c65f2a7543a5aca4/docker/docker-steps.j2#L84-L159) (just once)
+
+              1.1. each service's `host_prep_tasks`
+
+              1.2. other "static" actions
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+            ## Deployment workflow (2/2)
+
+            2. [`Deployment_Step<N>`](https://github.com/openstack/tripleo-heat-templates/blob/24c0e0d728162ef6be0593f2c65f2a7543a5aca4/docker/docker-steps.j2#L200-L218) (loop over [deploy-steps-playbook.yaml](https://github.com/openstack/tripleo-heat-templates/blob/24c0e0d728162ef6be0593f2c65f2a7543a5aca4/docker/deploy-steps-playbook.yaml))
+
+              2.1. Puppet step N on host
+
+              2.2. When `step == 1`: Configuration files for containers
+
+              2.3. Containers step N
+
+              2.4. Containerized Puppet tasks (only on bootstrap host)
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+            ## On the inside
+
+            * [docker-puppet.py](https://github.com/openstack/tripleo-heat-templates/blob/cf17396a371d4e48ff9a961c813a1327b4631ee8/docker/docker-puppet.py#L211-L230): running puppet in containers
+
+            * [docker-cmd](https://github.com/openstack/heat-agents/blob/887f06ab4c6248b0ce1a4873ce9b1319943c6e3b/heat-config-docker-cmd/install.d/hook-docker-cmd.py#L76-L82): Heat hook for managing containers
+
+            * [paunch](https://github.com/openstack/paunch): logic for managing containers (used by docker-cmd)
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+            ## Networking
+
+            * `--net=host`
+
+            * Containers have direct access to host NICs
+
+            * Network isolation, debugging etc. is the same<br/>as in non-containerized environment
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+            ## Upgrades
+
+            * The same mechanisms ([docker/post-upgrade.j2.yaml](https://github.com/openstack/tripleo-heat-templates/blob/cf17396a371d4e48ff9a961c813a1327b4631ee8/docker/post-upgrade.j2.yaml))
+
+              1. Run upgrade tasks
+
+              2. Run deployment workflow like on a fresh deployment
+
+            * Different [`upgrade_tasks`](https://github.com/openstack/tripleo-heat-templates/blob/61fdeb67a021d8f3a74186200674b6725c0b8870/docker/services/heat-api.yaml#L131-L134) than non-containerized
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+            ## Images
+
+            * We use [Kolla](https://github.com/openstack/kolla) images with [TripleO customizations](https://github.com/openstack/tripleo-common/blob/2938c7005b802ee14af0bd188d28d7d13b1ee25c/container-images/tripleo_kolla_template_overrides.j2)
+
+            * External registry (dockerhub) → undercloud registry<br/>→ overcloud
+
+            * [Manual building](http://tripleo.org/containers_deployment/overcloud.html#populate-local-docker-registry)
+
+            * Automated building is WIP
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+            ## Logs
+
+            * `docker logs $CONTAINER`
+
+            * `/var/log/containers/$SERVICE`
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+            ## When logs are not enough
+
+            * We have [docs for that](http://tripleo.org/containers_deployment/tips_tricks.html#debugging-container-failures)
+
+              * Live container:<br/>`docker exec -ti $CONTAINER_ID_OR_NAME /bin/bash`
+
+              * Failed/stopped container:<br/>`docker export $CONTAINER_ID_OR_NAME | tar -C /tmp/$CONTAINER_ID_OR_NAME -xvf -`
+
+              * Details about a container or image:<br/>`docker inspect $CONTAINER_OR_IMAGE_ID_OR_NAME`
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+            ## Even more info
+
+            * See how Quickstart [collects logs](https://github.com/openstack/tripleo-quickstart-extras/blob/1912e0988dd80cc942eacaa6aaa5515582cf88df/roles/collect-logs/tasks/collect.yml#L157-L176)
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+            ## Containers CI (1/2)
+
+            * OVB overcloud job and nodepool undercloud job use the<br/>[original CI script mechanisms](https://github.com/openstack-infra/tripleo-ci/blob/0522fb5a85e39ea0e96caddfb88c86cd0fa3f7e2/toci_gate_test-orig.sh#L269-L276)
+
+            * Undercloud job uses<br/>[`tripleo.sh --undercloud-containers`](https://github.com/openstack-infra/tripleo-ci/blob/0522fb5a85e39ea0e96caddfb88c86cd0fa3f7e2/scripts/tripleo.sh#L551-L623)
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+            ## Containers CI (2/2)
+
+            * [Featureset matrix](https://github.com/openstack/tripleo-quickstart/blob/80aaa7615891f4cf85789b9dd90a88cf1104bfc1/doc/source/feature-configuration.rst)
+
+            * [`containerized_overcloud: true`](https://github.com/openstack/tripleo-quickstart/blob/80aaa7615891f4cf85789b9dd90a88cf1104bfc1/config/general_config/featureset010.yml#L7) (FS 010)
+
+            * [`containerized_overcloud_upgrade: true`](https://github.com/openstack/tripleo-quickstart/blob/80aaa7615891f4cf85789b9dd90a88cf1104bfc1/config/general_config/featureset011.yml#L12-L24) (FS 011)
+
+            * [Containerized upgrade scenarios 001-004](https://github.com/openstack/tripleo-quickstart/tree/80aaa7615891f4cf85789b9dd90a88cf1104bfc1/config/general_config) (FS 012 - FS 015)
+
+            * [Containerized deployment scenarios 001-004](https://github.com/openstack/tripleo-quickstart/tree/80aaa7615891f4cf85789b9dd90a88cf1104bfc1/config/general_config) (FS 016 - FS 019)
+
+            * Using [container-specific composable_scenario](https://github.com/openstack/tripleo-heat-templates/blob/2895d8d65adbc17f035425305f28a5ee0938f40d/ci/environments/multinode-containers.yaml) values until HA comes
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+            ## Some notable code in Quickstart/CI
+
+            * [`overcloud-prep-containers.sh`](https://github.com/openstack/tripleo-quickstart-extras/blob/1912e0988dd80cc942eacaa6aaa5515582cf88df/roles/overcloud-prep-containers/templates/overcloud-prep-containers.sh.j2)
+
+            * [`container-default-parameters.yaml`](https://github.com/openstack/tripleo-quickstart-extras/blob/1912e0988dd80cc942eacaa6aaa5515582cf88df/roles/overcloud-prep-containers/templates/container-default-parameters.yaml.j2)
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
           </textarea>
         </section>
       </div>
@@ -46,6 +272,9 @@
       // - https://github.com/hakimel/reveal.js#configuration
       // - https://github.com/hakimel/reveal.js#dependencies
       Reveal.initialize({
+        width: 1200,
+        height: 900,
+
         history: true,
         controls: false,
         transition: 'none',
