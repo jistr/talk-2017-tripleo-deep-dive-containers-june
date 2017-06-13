@@ -32,7 +32,41 @@
         </section>
         <section data-markdown>
           <textarea data-template>
+            ## Container basics
+
+            * TripleO currently uses Docker for containers
+
+            * In case you have no prior exposure to Docker, please see:
+
+              * [Docker Overview](https://docs.docker.com/engine/docker-overview/)
+
+              * [Docker - Get Started pt.1: Orientation and Setup](https://docs.docker.com/get-started/)
+
+              * [Docker - Get Started pt.2: Containers](https://docs.docker.com/get-started/part2/)
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
             ## Deploying containerized (1/2)
+
+            * Overcloud
+
+              * `openstack overcloud deploy <env files> -e $THT/environments/docker.yaml`
+
+              * `./quickstart.sh --config=~/.quickstart/config/general_config/containers_minimal.yml $VIRTHOST`
+
+              * See [containerized overcloud docs](http://tripleo.org/containers_deployment/overcloud.html)
+
+            * Undercloud
+
+              * Currently for development purposes only
+
+              * See [containerized undercloud docs](http://tripleo.org/containers_deployment/undercloud.html)
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+            ## Deploying containerized (2/2)
 
             * Base: [environments/docker.yaml](https://github.com/openstack/tripleo-heat-templates/blob/50939eb7778e5f70fc9e8c0a3797265836531ade/environments/docker.yaml)
 
@@ -40,18 +74,9 @@
 
             * HA: [environments/docker-ha.yaml](https://review.openstack.org/#/c/471384/1/environments/docker-ha.yaml)
 
-              * Comes after docker.yaml
+              * WIP, comes after docker.yaml
 
             * TLS everywhere: [environments/docker-services-tls-everywhere.yaml](https://github.com/openstack/tripleo-heat-templates/blob/50939eb7778e5f70fc9e8c0a3797265836531ade/environments/docker-services-tls-everywhere.yaml)
-          </textarea>
-        </section>
-        <section data-markdown>
-          <textarea data-template>
-            ## Deploying containerized (2/2)
-
-            * We have [containerized undercloud docs](http://tripleo.org/containers_deployment/undercloud.html)
-
-            * We have [containerized overcloud docs](http://tripleo.org/containers_deployment/overcloud.html)
           </textarea>
         </section>
         <section data-markdown>
@@ -78,15 +103,14 @@
           <textarea data-template>
             ## Deployment workflow (2/2)
 
-            2. [`Deployment_Step<N>`](https://github.com/openstack/tripleo-heat-templates/blob/24c0e0d728162ef6be0593f2c65f2a7543a5aca4/docker/docker-steps.j2#L200-L218) (loop over [deploy-steps-playbook.yaml](https://github.com/openstack/tripleo-heat-templates/blob/24c0e0d728162ef6be0593f2c65f2a7543a5aca4/docker/deploy-steps-playbook.yaml))
-
-              2.1. Puppet step N on host
-
-              2.2. When `step == 1`: Configuration files for containers
-
-              2.3. Containers step N
-
-              2.4. Containerized Puppet tasks (only on bootstrap host)
+            <ol start="2">
+              <li><p><a href="https://github.com/openstack/tripleo-heat-templates/blob/24c0e0d728162ef6be0593f2c65f2a7543a5aca4/docker/docker-steps.j2#L200-L218"><code>Deployment_Step&lt;N&gt;</code></a> (loop over <a href="https://github.com/openstack/tripleo-heat-templates/blob/24c0e0d728162ef6be0593f2c65f2a7543a5aca4/docker/deploy-steps-playbook.yaml">deploy-steps-playbook.yaml</a>)</p>
+                <p>2.1. Puppet step N on host</p>
+                <p>2.2. When <code>step == 1</code>: Configuration files for containers</p>
+                <p>2.3. Containers step N</p>
+                <p>2.4. Containerized Puppet tasks (only on bootstrap host)</p>
+              </li>
+            </ol>
           </textarea>
         </section>
         <section data-markdown>
@@ -94,6 +118,8 @@
             ## On the inside
 
             * [docker-puppet.py](https://github.com/openstack/tripleo-heat-templates/blob/cf17396a371d4e48ff9a961c813a1327b4631ee8/docker/docker-puppet.py#L211-L230): running puppet in containers
+
+              * [puppet tags](https://github.com/openstack/tripleo-heat-templates/blob/cf17396a371d4e48ff9a961c813a1327b4631ee8/docker/docker-puppet.py#L279-L282), example: [keystone init](https://github.com/openstack/tripleo-heat-templates/blob/10a2d81185e5cdd9b8dbdea5d2886159757c7989/docker/services/keystone.yaml#L151-L157)
 
             * [docker-cmd](https://github.com/openstack/heat-agents/blob/887f06ab4c6248b0ce1a4873ce9b1319943c6e3b/heat-config-docker-cmd/install.d/hook-docker-cmd.py#L76-L82): Heat hook for managing containers
 
@@ -115,11 +141,13 @@
           <textarea data-template>
             ## Upgrades
 
-            * The same mechanisms ([docker/post-upgrade.j2.yaml](https://github.com/openstack/tripleo-heat-templates/blob/cf17396a371d4e48ff9a961c813a1327b4631ee8/docker/post-upgrade.j2.yaml))
+            * The same approach as non-containerized
 
               1. Run upgrade tasks
 
               2. Run deployment workflow like on a fresh deployment
+
+            * Reuse [puppet/major_upgrade_steps.j2.yaml](https://github.com/openstack/tripleo-heat-templates/blob/10a2d81185e5cdd9b8dbdea5d2886159757c7989/puppet/major_upgrade_steps.j2.yaml),<br/>custom [docker/post-upgrade.j2.yaml](https://github.com/openstack/tripleo-heat-templates/blob/cf17396a371d4e48ff9a961c813a1327b4631ee8/docker/post-upgrade.j2.yaml)
 
             * Different [`upgrade_tasks`](https://github.com/openstack/tripleo-heat-templates/blob/61fdeb67a021d8f3a74186200674b6725c0b8870/docker/services/heat-api.yaml#L131-L134) than non-containerized
           </textarea>
@@ -150,13 +178,13 @@
           <textarea data-template>
             ## When logs are not enough
 
+            * Live container:<br/>`docker exec -ti $CONTAINER_ID_OR_NAME /bin/bash`
+
+            * Failed/stopped container:<br/>`docker export $CONTAINER_ID_OR_NAME | tar -C /tmp/$CONTAINER_ID_OR_NAME -xvf -`
+
+            * Details about a container or image:<br/>`docker inspect $CONTAINER_OR_IMAGE_ID_OR_NAME`
+
             * We have [docs for that](http://tripleo.org/containers_deployment/tips_tricks.html#debugging-container-failures)
-
-              * Live container:<br/>`docker exec -ti $CONTAINER_ID_OR_NAME /bin/bash`
-
-              * Failed/stopped container:<br/>`docker export $CONTAINER_ID_OR_NAME | tar -C /tmp/$CONTAINER_ID_OR_NAME -xvf -`
-
-              * Details about a container or image:<br/>`docker inspect $CONTAINER_OR_IMAGE_ID_OR_NAME`
           </textarea>
         </section>
         <section data-markdown>
@@ -168,16 +196,67 @@
         </section>
         <section data-markdown>
           <textarea data-template>
-            ## Containers CI (1/2)
+            ## CI job logs (1/4)
 
-            * OVB overcloud job and nodepool undercloud job use the<br/>[original CI script mechanisms](https://github.com/openstack-infra/tripleo-ci/blob/0522fb5a85e39ea0e96caddfb88c86cd0fa3f7e2/toci_gate_test-orig.sh#L269-L276)
+            * Start with `console.html`
 
-            * Undercloud job uses<br/>[`tripleo.sh --undercloud-containers`](https://github.com/openstack-infra/tripleo-ci/blob/0522fb5a85e39ea0e96caddfb88c86cd0fa3f7e2/scripts/tripleo.sh#L551-L623)
+            * Further log location differs OVB vs. nodepool
+
+              * nodepool: `/logs/<machine>`
+
+                * machines are: `undercloud` or `subnode-*`
+
+              * OVB: `/logs/oooq/<machine>`
+
+                * machines are: `undercloud` or `overcloud-*`
           </textarea>
         </section>
         <section data-markdown>
           <textarea data-template>
-            ## Containers CI (2/2)
+            ## CI job logs (2/4)
+
+            * Follow up with OOOQ scripts and their outputs
+
+              * `…/undercloud/home/jenkins/`
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+            ## CI job logs (3/4)
+
+            * `…/<machine>/var/log/messages.txt.gz`
+
+            * `…/<machine>/var/log/host_info.txt.gz`
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+            ## CI job logs (4/4)
+
+            * `…/<machine>/var/log/containers/`
+
+            * `…/<machine>/var/log/config-data/`
+
+            * `…/<machine>/var/log/extra/`
+
+            * `…/<machine>/var/log/extra/docker/docker_allinfo.log.txt.gz`
+
+            * `…/<machine>/var/log/extra/docker/containers/`
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+            ## CI status
+
+            * [Quick and simple status](http://tripleo.org/cistatus.html)
+
+            * [Advanced status](http://status-tripleoci.rhcloud.com)
+
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+            ## CI implementation (1/2)
 
             * [Featureset matrix](https://github.com/openstack/tripleo-quickstart/blob/80aaa7615891f4cf85789b9dd90a88cf1104bfc1/doc/source/feature-configuration.rst)
 
@@ -194,71 +273,27 @@
         </section>
         <section data-markdown>
           <textarea data-template>
-            ## Some notable code in Quickstart/CI
+            ## CI implementation (2/2)
 
-            * [`overcloud-prep-containers.sh`](https://github.com/openstack/tripleo-quickstart-extras/blob/1912e0988dd80cc942eacaa6aaa5515582cf88df/roles/overcloud-prep-containers/templates/overcloud-prep-containers.sh.j2)
+            * OVB overcloud job and nodepool undercloud job use the<br/>[original CI script mechanisms](https://github.com/openstack-infra/tripleo-ci/blob/0522fb5a85e39ea0e96caddfb88c86cd0fa3f7e2/toci_gate_test-orig.sh#L269-L276)
 
-            * [`container-default-parameters.yaml`](https://github.com/openstack/tripleo-quickstart-extras/blob/1912e0988dd80cc942eacaa6aaa5515582cf88df/roles/overcloud-prep-containers/templates/container-default-parameters.yaml.j2)
+            * Undercloud job uses<br/>[`tripleo.sh --undercloud-containers`](https://github.com/openstack-infra/tripleo-ci/blob/0522fb5a85e39ea0e96caddfb88c86cd0fa3f7e2/scripts/tripleo.sh#L551-L623)
           </textarea>
         </section>
         <section data-markdown>
           <textarea data-template>
+            ## Code in Quickstart/CI
+
+            * Not much complexity, follows manual instructions
+
+              * [`overcloud-prep-containers.sh`](https://github.com/openstack/tripleo-quickstart-extras/blob/1912e0988dd80cc942eacaa6aaa5515582cf88df/roles/overcloud-prep-containers/templates/overcloud-prep-containers.sh.j2)
+
+              * [`container-default-parameters.yaml`](https://github.com/openstack/tripleo-quickstart-extras/blob/1912e0988dd80cc942eacaa6aaa5515582cf88df/roles/overcloud-prep-containers/templates/container-default-parameters.yaml.j2)
           </textarea>
         </section>
         <section data-markdown>
           <textarea data-template>
-          </textarea>
-        </section>
-        <section data-markdown>
-          <textarea data-template>
-          </textarea>
-        </section>
-        <section data-markdown>
-          <textarea data-template>
-          </textarea>
-        </section>
-        <section data-markdown>
-          <textarea data-template>
-          </textarea>
-        </section>
-        <section data-markdown>
-          <textarea data-template>
-          </textarea>
-        </section>
-        <section data-markdown>
-          <textarea data-template>
-          </textarea>
-        </section>
-        <section data-markdown>
-          <textarea data-template>
-          </textarea>
-        </section>
-        <section data-markdown>
-          <textarea data-template>
-          </textarea>
-        </section>
-        <section data-markdown>
-          <textarea data-template>
-          </textarea>
-        </section>
-        <section data-markdown>
-          <textarea data-template>
-          </textarea>
-        </section>
-        <section data-markdown>
-          <textarea data-template>
-          </textarea>
-        </section>
-        <section data-markdown>
-          <textarea data-template>
-          </textarea>
-        </section>
-        <section data-markdown>
-          <textarea data-template>
-          </textarea>
-        </section>
-        <section data-markdown>
-          <textarea data-template>
+            ## THE END
           </textarea>
         </section>
       </div>
