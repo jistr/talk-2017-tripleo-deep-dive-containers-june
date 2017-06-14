@@ -28,7 +28,7 @@
           <h2>TripleO deep dive</h2>
           <h1>Containers</h1>
           <p>June 2017</p>
-          <p>jistr</p>
+          <p><a href="https://jistr.github.io/tripleo-deep-dive-containers-june-2017">jistr.github.io/tripleo-deep-dive-containers-june-2017</a></p>
         </section>
         <section data-markdown>
           <textarea data-template>
@@ -47,22 +47,15 @@
         </section>
         <section data-markdown>
           <textarea data-template>
-            ## Deploying containerized (1/3)
-
-            * Get images and upload them to local registry (optional)
-
-              * `openstack overcloud container image upload`
-          </textarea>
-        </section>
-        <section data-markdown>
-          <textarea data-template>
-            ## Deploying containerized (2/3)
+            ## Deploying containerized (1/2)
 
             * Overcloud
 
-              * `openstack overcloud deploy <env files> -e $THT/environments/docker.yaml`
+                  openstack overcloud deploy <env files> -e $THT/environments/docker.yaml
 
-              * `./quickstart.sh --config=~/.quickstart/config/general_config/`[`containers_minimal.yml`](https://github.com/openstack/tripleo-quickstart-extras/blob/6675b26e611507fac000be72c17788ad298c6191/config/general_config/containers_minimal.yml) `$VIRTHOST`
+                  # or
+
+                  ./quickstart.sh --config=~/.quickstart/config/general_config/containers_minimal.yml $VIRTHOST
 
               * See [containerized overcloud docs](http://tripleo.org/containers_deployment/overcloud.html)
 
@@ -75,7 +68,7 @@
         </section>
         <section data-markdown>
           <textarea data-template>
-            ## Deploying containerized (3/3)
+            ## Deploying containerized (2/2)
 
             * Base: [environments/docker.yaml](https://github.com/openstack/tripleo-heat-templates/blob/50939eb7778e5f70fc9e8c0a3797265836531ade/environments/docker.yaml)
 
@@ -90,11 +83,26 @@
         </section>
         <section data-markdown>
           <textarea data-template>
-            ## Images
+            ## Images on undercloud
+
+            * External registry (dockerhub or RDO) → undercloud registry<br/>→ overcloud
+
+            * Pull images to local registry:
+
+                  openstack overcloud container image upload
+
+            * Add to your environment
+
+                  parameter_defaults:
+                    DockerNamespace: 192.168.24.1:8787/tripleoupstream
+                    DockerNamespaceIsRegistry: true
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+            ## Image builds
 
             * We use [Kolla](https://github.com/openstack/kolla) images with [TripleO customizations](https://github.com/openstack/tripleo-common/blob/2938c7005b802ee14af0bd188d28d7d13b1ee25c/container-images/tripleo_kolla_template_overrides.j2)
-
-            * External registry (dockerhub) → undercloud registry<br/>→ overcloud
 
             * [Manual building](http://tripleo.org/containers_deployment/overcloud.html#populate-local-docker-registry)
 
@@ -116,9 +124,9 @@
 
             1. [`HostPrepDeployment`](https://github.com/openstack/tripleo-heat-templates/blob/24c0e0d728162ef6be0593f2c65f2a7543a5aca4/docker/docker-steps.j2#L84-L159) (just once)
 
-              1.1. each service's `host_prep_tasks`
+              1.1. Each service's `host_prep_tasks`
 
-              1.2. other "static" actions
+              1.2. Internal TripleO tasks
           </textarea>
         </section>
         <section data-markdown>
@@ -126,7 +134,7 @@
             ## Deployment workflow (2/2)
 
             <ol start="2">
-              <li><p><a href="https://github.com/openstack/tripleo-heat-templates/blob/24c0e0d728162ef6be0593f2c65f2a7543a5aca4/docker/docker-steps.j2#L200-L218"><code>Deployment_Step&lt;N&gt;</code></a> (loop over <a href="https://github.com/openstack/tripleo-heat-templates/blob/24c0e0d728162ef6be0593f2c65f2a7543a5aca4/docker/deploy-steps-playbook.yaml">deploy-steps-playbook.yaml</a>)</p>
+              <li><p><a href="https://github.com/openstack/tripleo-heat-templates/blob/24c0e0d728162ef6be0593f2c65f2a7543a5aca4/docker/docker-steps.j2#L198-L220"><code>Deployment_Step&lt;N&gt;</code></a> (loop over <a href="https://github.com/openstack/tripleo-heat-templates/blob/24c0e0d728162ef6be0593f2c65f2a7543a5aca4/docker/deploy-steps-playbook.yaml">deploy-steps-playbook.yaml</a>)</p>
                 <p>2.1. Puppet step N on host</p>
                 <p>2.2. When <code>step == 1</code>: Configuration files for containers</p>
                 <p>2.3. Containers step N</p>
@@ -143,9 +151,7 @@
 
               * [puppet tags](https://github.com/openstack/tripleo-heat-templates/blob/cf17396a371d4e48ff9a961c813a1327b4631ee8/docker/docker-puppet.py#L279-L282), example: [keystone init](https://github.com/openstack/tripleo-heat-templates/blob/10a2d81185e5cdd9b8dbdea5d2886159757c7989/docker/services/keystone.yaml#L151-L157)
 
-            * [docker-cmd](https://github.com/openstack/heat-agents/blob/887f06ab4c6248b0ce1a4873ce9b1319943c6e3b/heat-config-docker-cmd/install.d/hook-docker-cmd.py#L76-L82): Heat hook for managing containers
-
-            * [paunch](https://github.com/openstack/paunch): logic for managing containers (used by docker-cmd)
+            * [paunch](https://github.com/openstack/paunch): logic for managing containers
           </textarea>
         </section>
         <section data-markdown>
@@ -163,10 +169,10 @@
           <textarea data-template>
             ## Upgrades (1/2)
 
-            * `openstack overcloud deploy <env files> \`<br/>
-              `  -e $THT/environments/docker.yaml \`<br/>
-              `-e $THT/environments/major-upgrade-composable-steps-docker.yaml \`<br/>
-              `-e ~/upgrade-init-repos.yaml`
+                openstack overcloud deploy <env files> \
+                  -e $THT/environments/docker.yaml \
+                  -e $THT/environments/major-upgrade-composable-steps-docker.yaml \
+                  -e ~/upgrade-init-repos.yaml
 
             * Main step only. Separate compute upgrades & converge TBD.
           </textarea>
@@ -190,20 +196,30 @@
           <textarea data-template>
             ## Logs
 
-            * `docker logs $CONTAINER`
+            * Container stdout/stderr
 
-            * `/var/log/containers/$SERVICE`
+                  docker logs $CONTAINER
+
+            * Oldschool logs
+
+                  /var/log/containers/$SERVICE
           </textarea>
         </section>
         <section data-markdown>
           <textarea data-template>
             ## When logs are not enough
 
-            * Live container:<br/>`docker exec -ti $CONTAINER_ID_OR_NAME /bin/bash`
+            * Live container
 
-            * Failed/stopped container:<br/>`docker export $CONTAINER_ID_OR_NAME | tar -C /tmp/$CONTAINER_ID_OR_NAME -xvf -`
+                  docker exec -ti $CONTAINER_ID_OR_NAME /bin/bash
 
-            * Details about a container or image:<br/>`docker inspect $CONTAINER_OR_IMAGE_ID_OR_NAME`
+            * Failed/stopped container
+
+                  docker export $CONTAINER_ID_OR_NAME | tar -C /tmp/$CONTAINER_ID_OR_NAME -xvf -
+
+            * Details about a container or image
+
+                  docker inspect $CONTAINER_OR_IMAGE_ID_OR_NAME
 
             * We have [docs for that](http://tripleo.org/containers_deployment/tips_tricks.html#debugging-container-failures)
           </textarea>
@@ -219,7 +235,7 @@
           <textarea data-template>
             ## CI job logs (1/4)
 
-            * Start with `console.html`
+            * Start with console.html
 
             * Further log location differs OVB vs. nodepool
 
@@ -329,6 +345,8 @@
         <section data-markdown>
           <textarea data-template>
             ## THE END
+
+            <p><a href="https://jistr.github.io/tripleo-deep-dive-containers-june-2017">jistr.github.io/tripleo-deep-dive-containers-june-2017</a></p>
           </textarea>
         </section>
       </div>
