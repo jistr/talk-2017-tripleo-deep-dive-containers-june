@@ -47,13 +47,22 @@
         </section>
         <section data-markdown>
           <textarea data-template>
-            ## Deploying containerized (1/2)
+            ## Deploying containerized (1/3)
+
+            * Get images and upload them to local registry (optional)
+
+              * `openstack overcloud container image upload`
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+            ## Deploying containerized (2/3)
 
             * Overcloud
 
               * `openstack overcloud deploy <env files> -e $THT/environments/docker.yaml`
 
-              * `./quickstart.sh --config=~/.quickstart/config/general_config/containers_minimal.yml $VIRTHOST`
+              * `./quickstart.sh --config=~/.quickstart/config/general_config/`[`containers_minimal.yml`](https://github.com/openstack/tripleo-quickstart-extras/blob/6675b26e611507fac000be72c17788ad298c6191/config/general_config/containers_minimal.yml) `$VIRTHOST`
 
               * See [containerized overcloud docs](http://tripleo.org/containers_deployment/overcloud.html)
 
@@ -66,7 +75,7 @@
         </section>
         <section data-markdown>
           <textarea data-template>
-            ## Deploying containerized (2/2)
+            ## Deploying containerized (3/3)
 
             * Base: [environments/docker.yaml](https://github.com/openstack/tripleo-heat-templates/blob/50939eb7778e5f70fc9e8c0a3797265836531ade/environments/docker.yaml)
 
@@ -77,6 +86,19 @@
               * WIP, comes after docker.yaml
 
             * TLS everywhere: [environments/docker-services-tls-everywhere.yaml](https://github.com/openstack/tripleo-heat-templates/blob/50939eb7778e5f70fc9e8c0a3797265836531ade/environments/docker-services-tls-everywhere.yaml)
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+            ## Images
+
+            * We use [Kolla](https://github.com/openstack/kolla) images with [TripleO customizations](https://github.com/openstack/tripleo-common/blob/2938c7005b802ee14af0bd188d28d7d13b1ee25c/container-images/tripleo_kolla_template_overrides.j2)
+
+            * External registry (dockerhub) → undercloud registry<br/>→ overcloud
+
+            * [Manual building](http://tripleo.org/containers_deployment/overcloud.html#populate-local-docker-registry)
+
+            * [Automated building](https://rdo-container-registry.readthedocs.io/en/latest/using.html)
           </textarea>
         </section>
         <section data-markdown>
@@ -139,7 +161,19 @@
         </section>
         <section data-markdown>
           <textarea data-template>
-            ## Upgrades
+            ## Upgrades (1/2)
+
+            * `openstack overcloud deploy <env files> \`<br/>
+              `  -e $THT/environments/docker.yaml \`<br/>
+              `-e $THT/environments/major-upgrade-composable-steps-docker.yaml \`<br/>
+              `-e ~/upgrade-init-repos.yaml`
+
+            * Main step only. Separate compute upgrades & converge TBD.
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+            ## Upgrades (2/2)
 
             * The same approach as non-containerized
 
@@ -150,19 +184,6 @@
             * Reuse [puppet/major_upgrade_steps.j2.yaml](https://github.com/openstack/tripleo-heat-templates/blob/10a2d81185e5cdd9b8dbdea5d2886159757c7989/puppet/major_upgrade_steps.j2.yaml),<br/>custom [docker/post-upgrade.j2.yaml](https://github.com/openstack/tripleo-heat-templates/blob/cf17396a371d4e48ff9a961c813a1327b4631ee8/docker/post-upgrade.j2.yaml)
 
             * Different [`upgrade_tasks`](https://github.com/openstack/tripleo-heat-templates/blob/61fdeb67a021d8f3a74186200674b6725c0b8870/docker/services/heat-api.yaml#L131-L134) than non-containerized
-          </textarea>
-        </section>
-        <section data-markdown>
-          <textarea data-template>
-            ## Images
-
-            * We use [Kolla](https://github.com/openstack/kolla) images with [TripleO customizations](https://github.com/openstack/tripleo-common/blob/2938c7005b802ee14af0bd188d28d7d13b1ee25c/container-images/tripleo_kolla_template_overrides.j2)
-
-            * External registry (dockerhub) → undercloud registry<br/>→ overcloud
-
-            * [Manual building](http://tripleo.org/containers_deployment/overcloud.html#populate-local-docker-registry)
-
-            * Automated building is WIP
           </textarea>
         </section>
         <section data-markdown>
@@ -268,7 +289,8 @@
 
             * [Containerized deployment scenarios 001-004](https://github.com/openstack/tripleo-quickstart/tree/80aaa7615891f4cf85789b9dd90a88cf1104bfc1/config/general_config) (FS 016 - FS 019)
 
-            * Using [container-specific composable_scenario](https://github.com/openstack/tripleo-heat-templates/blob/2895d8d65adbc17f035425305f28a5ee0938f40d/ci/environments/multinode-containers.yaml) values until HA comes
+            * Container-specific [composable_scenario](https://github.com/openstack/tripleo-heat-templates/blob/2895d8d65adbc17f035425305f28a5ee0938f40d/ci/environments/multinode-containers.yaml) w/o HA for now
+            * Generic [`mixed_upgrade` support in CI](https://github.com/openstack-infra/tripleo-ci/blob/656ff860584786f26b3fe71f0b53cb142ebd9c68/toci_gate_test-oooq.sh#L164-L167)
           </textarea>
         </section>
         <section data-markdown>
@@ -282,13 +304,26 @@
         </section>
         <section data-markdown>
           <textarea data-template>
-            ## Code in Quickstart/CI
+            ## Code in Quickstart (1/2)
 
-            * Not much complexity, follows manual instructions
+            * Deployment
 
               * [`overcloud-prep-containers.sh`](https://github.com/openstack/tripleo-quickstart-extras/blob/1912e0988dd80cc942eacaa6aaa5515582cf88df/roles/overcloud-prep-containers/templates/overcloud-prep-containers.sh.j2)
 
               * [`container-default-parameters.yaml`](https://github.com/openstack/tripleo-quickstart-extras/blob/1912e0988dd80cc942eacaa6aaa5515582cf88df/roles/overcloud-prep-containers/templates/container-default-parameters.yaml.j2)
+
+              * [`container_args`](https://github.com/openstack/tripleo-quickstart-extras/blob/4da8ed75f4ee9a8129e876ca5b7bed55d0fc79a0/roles/overcloud-deploy/tasks/pre-deploy.yml#L169-L177)
+          </textarea>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+            ## Code in Quickstart (2/2)
+
+            * Upgrade
+
+              * [`overcloud-repo-tripleo-ci.yaml.j2`](https://github.com/openstack/tripleo-quickstart-extras/blob/6675b26e611507fac000be72c17788ad298c6191/roles/overcloud-upgrade/templates/overcloud-repo-tripleo-ci.yaml.j2)
+
+              * [`major-upgrade-overcloud-containers.sh.j2`](https://github.com/openstack/tripleo-quickstart-extras/blob/6675b26e611507fac000be72c17788ad298c6191/roles/overcloud-upgrade/templates/major-upgrade-overcloud-containers.sh.j2)
           </textarea>
         </section>
         <section data-markdown>
