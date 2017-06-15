@@ -28,7 +28,7 @@
           <h2>TripleO deep dive</h2>
           <h1>Containers</h1>
           <p>June 2017</p>
-          <p><a href="https://jistr.github.io/tripleo-deep-dive-containers-june-2017">jistr.github.io/tripleo-deep-dive-containers-june-2017</a></p>
+          <p><a href="https://jistr.github.io/tripleo-deep-dive-containers-june-2017">https://jistr.github.io/tripleo-deep-dive-containers-june-2017</a></p>
         </section>
         <section data-markdown>
           <textarea data-template>
@@ -36,7 +36,7 @@
 
             * TripleO currently uses Docker for containers
 
-            * In case you have no prior exposure to Docker, please see:
+            * Docker basics:
 
               * [Docker Overview](https://docs.docker.com/engine/docker-overview/)
 
@@ -53,7 +53,7 @@
 
                   openstack overcloud deploy <env files> -e $THT/environments/docker.yaml
 
-                  # or
+                <!-- code block split -->
 
                   ./quickstart.sh --config=~/.quickstart/config/general_config/containers_minimal.yml $VIRTHOST
 
@@ -74,7 +74,7 @@
 
               * Switching to containerized per-service (not per role/node)
 
-            * HA: [environments/docker-ha.yaml](https://review.openstack.org/#/c/471384/1/environments/docker-ha.yaml)
+            * HA: [environments/docker-ha.yaml](https://review.openstack.org/#/c/471384/6/environments/docker-ha.yaml)
 
               * WIP, comes after docker.yaml
 
@@ -105,6 +105,10 @@
             * We use [Kolla](https://github.com/openstack/kolla) images with [TripleO customizations](https://github.com/openstack/tripleo-common/blob/2938c7005b802ee14af0bd188d28d7d13b1ee25c/container-images/tripleo_kolla_template_overrides.j2)
 
             * [Manual building](http://tripleo.org/containers_deployment/overcloud.html#populate-local-docker-registry)
+
+                  kolla-build --push --registry 192.168.24.1:8787 \
+                    --base centos --type binary --namespace tripleoupstream --tag latest \
+                    --template-override /usr/share/tripleo-common/container-images/tripleo_kolla_template_overrides.j2
 
             * [Automated building](https://rdo-container-registry.readthedocs.io/en/latest/using.html)
           </textarea>
@@ -195,6 +199,10 @@
         <section data-markdown>
           <textarea data-template>
             ## Logs
+
+            * List all containers
+
+                  docker ps -a
 
             * Container stdout/stderr
 
@@ -346,7 +354,7 @@
           <textarea data-template>
             ## THE END
 
-            <p><a href="https://jistr.github.io/tripleo-deep-dive-containers-june-2017">jistr.github.io/tripleo-deep-dive-containers-june-2017</a></p>
+            <p><a href="https://jistr.github.io/tripleo-deep-dive-containers-june-2017">https://jistr.github.io/tripleo-deep-dive-containers-june-2017</a></p>
           </textarea>
         </section>
       </div>
